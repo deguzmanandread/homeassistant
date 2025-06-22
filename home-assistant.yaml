@@ -1,0 +1,119 @@
+esphome:
+  name: home-assistant
+  friendly_name: Home Assistant
+
+esp32:
+  board: esp32-s3-devkitc-1
+  framework:
+    type: arduino
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "B1zVgX2O5/OuMG9ADpidbZqjrV25s0ogXVEprfl7hYc="
+
+ota:
+  - platform: esphome
+    password: "6a417f695c8fc81b4ff4b5c6bac25e88"
+
+wifi:
+  ssid: "Roxas_residence"
+  password: "Rxs_15162121"
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Home-Assistant Fallback Hotspot"
+    password: "0qNbGIz589uG"
+
+captive_portal:
+# DHT22 Sensor Configuration
+sensor:
+  - platform: dht
+    model: DHT22
+    pin: GPIO4
+    temperature:
+      name: "Room Temperature"
+      id: room_temp
+    humidity:
+      name: "Room Humidity"
+      id: room_humidity
+    update_interval: 3s
+
+  - platform: adc
+    pin: GPIO5
+    name: "Ambient Light Level"
+    id: ambient_light
+    attenuation: 12db
+    update_interval: 3s
+
+# RGB LED (using PWM outputs via LEDC)
+output:
+  - platform: ledc
+    pin: GPIO14
+    id: red_led
+  - platform: ledc
+    pin: GPIO12
+    id: green_led
+  - platform: ledc
+    pin: GPIO13
+    id: blue_led
+
+light:
+  - platform: rgb
+    name: "RGB Light"
+    red: red_led
+    green: green_led
+    blue: blue_led
+    id: rgb_light
+    gamma_correct: 2.8
+    default_transition_length: 1s
+
+# Flying Fish PIR Motion Sensor
+binary_sensor:
+  - platform: gpio
+    name: "Room Motion"
+    device_class: motion
+    id: room_motion
+    pin:
+      number: GPIO19
+      inverted: true
+# Relay Module (control appliance/light)
+switch:
+  - platform: gpio
+    pin: GPIO18
+    name: "Appliance Relay"
+    id: appliance_relay
+
+i2c:
+  sda: GPIO6
+  scl: GPIO7
+  scan: true
+
+font:
+  - file: "Fonts/14-Adobe-Helvetica-Bold.bdf"
+    id: my_font
+    size: 12
+
+display:
+  - platform: ssd1306_i2c
+    model: "SSD1306 128x64"
+    address: 0x3C
+    update_interval: 1s
+    lambda: |-
+      char temp[32];
+      char hum[32];
+      char light[32];
+      char motion[32];
+
+      sprintf(temp, "Temp: %.1f°C", id(room_temp).state);
+      sprintf(hum, "Humidity: %.1f%%", id(room_humidity).state);
+      sprintf(light, "Light: %.2f", id(ambient_light).state);
+      sprintf(motion, "Motion: %s", id(room_motion).state ? "Yes" : "No");
+
+      it.print(0, 0, id(my_font), temp);
+      it.print(0, 16, id(my_font), hum);
+      it.print(0, 32, id(my_font), light);
+      it.print(0, 48, id(my_font), motion);
